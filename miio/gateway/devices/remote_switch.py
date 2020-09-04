@@ -60,7 +60,7 @@ class D1RemoteSwitchDouble(RemoteSwitchDevice):
 class Switch(RemoteSwitchDevice):
     """Subdevice Switch specific properties and methods."""
 
-    _zigbee_model = "lumi.sensor_switch"
+    _zigbee_model = "lumi.sensor_switch.v2"
     _model = "WXKG01LM"
     _name = "Button"
 
