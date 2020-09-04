@@ -72,6 +72,9 @@ class Gateway(Device):
         start_id: int = 0,
         debug: int = 0,
         lazy_discover: bool = True,
+        cloud_username: str = None,
+        cloud_password: str = None,
+        cloud_country: str = "de",
     ) -> None:
         super().__init__(ip, token, start_id, debug, lazy_discover)
 
@@ -88,6 +91,10 @@ class Gateway(Device):
         self._light = Light(parent=self)
         self._devices = {}
         self._info = None
+        self._cloud_username = cloud_username
+        self._cloud_password = cloud_password
+        self._cloud_country = cloud_country
+        self._did = None
 
     @property
     def alarm(self) -> "GatewayAlarm":  # noqa: F821
@@ -123,6 +130,14 @@ class Gateway(Device):
             self._info = self.info()
         return self._info.model
 
+    @property
+    def mac(self):
+        """Return the mac address of the gateway."""
+        # Check if catch already has the gateway info, otherwise get it from the device
+        if self._info is None:
+            self._info = self.info()
+        return self._info.mac_address
+
     @command()
     def discover_devices(self):
         """
@@ -134,10 +149,50 @@ class Gateway(Device):
 
         self._devices = {}
 
-        # Skip the models which do not support getting the device list
+        # First try using cloud to get the device list
+        if self._cloud_username and self._cloud_password:
+            from micloud import MiCloud
+
+            mc = MiCloud(self._cloud_username, self._cloud_password)
+            mc.login()
+            token = mc.get_token() # to get your cloud service token.
+            devices_raw = mc.get_devices(country = self._cloud_country) # get list of devices
+
+            # find the gateway
+            for device in devices_raw:
+                if device["mac"] == self.mac:
+                    self._did = device["did"]
+                    break
+
+            # check if the gateway is found
+            if self._did is None:
+                _LOGGER.error(
+                    "Could not find gateway with ip '%s', mac '%s', model '%s' in the cloud device list response"
+                    self.ip,
+                    self.mac,
+                    self.model,
+                )
+                return self._devices
+
+            # find the subdevices belonging to this gateway
+            for device in devices_raw:
+                if device.get("parent_id") == self._did:
+                    # Match 'model' to get the type_id
+                    type_id = self.match_zigbee_model(device["model"])
+
+                    # Extract discovered information
+                    dev_info = SubDeviceInfo(device["did"], type_id, -1, -1, -1)
+
+                    # Setup the device
+                    self.setup_device(dev_info)
+
+            return self._devices
+
+        # Skip the models which do not support getting the device list locally
         if self.model == GATEWAY_MODEL_EU:
             _LOGGER.warning(
-                "Gateway model '%s' does not (yet) support getting the device list",
+                "Gateway model '%s' does not support getting the device list locally, "
+                "supplying the cloud_username and cloud_password is needed",
                 self.model,
             )
             return self._devices
