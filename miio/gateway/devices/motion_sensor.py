@@ -13,7 +13,7 @@ class Motion(MotionDevice):
     """Subdevice Motion specific properties and methods."""
 
     properties = []
-    _zigbee_model = "lumi.sensor_motion"
+    _zigbee_model = "lumi.sensor_motion.v2"
     _model = "RTCGQ01LM"
     _name = "Motion sensor"
 

@@ -12,7 +12,7 @@ class MagnetDevice(SubDevice):
 class Magnet(MagnetDevice):
     """Subdevice Magnet specific properties and methods."""
 
-    _zigbee_model = "lumi.sensor_magnet"
+    _zigbee_model = "lumi.sensor_magnet.v2"
     _model = "MCCGQ01LM"
     _name = "Door sensor"
 

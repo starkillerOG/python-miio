@@ -167,7 +167,7 @@ class Gateway(Device):
             # check if the gateway is found
             if self._did is None:
                 _LOGGER.error(
-                    "Could not find gateway with ip '%s', mac '%s', model '%s' in the cloud device list response"
+                    "Could not find gateway with ip '%s', mac '%s', model '%s' in the cloud device list response",
                     self.ip,
                     self.mac,
                     self.model,
